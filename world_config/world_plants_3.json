@@ -1,0 +1,16 @@
+{
+  "world": {
+    "width": 3,
+    "height": 3
+  },
+  "plants": [
+    {
+      "energy": 2,
+      "posx": 1,
+      "posy": 1
+    }
+  ],
+  "herbivores": [],
+  "carnivores": []
+}
+
