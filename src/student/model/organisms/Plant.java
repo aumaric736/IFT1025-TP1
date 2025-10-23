@@ -10,6 +10,8 @@ import student.model.behaviors.Edible;
 import student.model.behaviors.Growable;
 import student.model.behaviors.Reproducible;
 import student.model.core.World;
+import student.model.core.Position;
+import student.model.core.Cell;
 
 /**
  * Represents a simple plant with bounded energy and reproduction on saturation.
@@ -23,120 +25,174 @@ import student.model.core.World;
  * Behavior strictly limited to local growth and reproduction logic.
  */
 public class Plant extends Organism implements Growable, Edible, Reproducible {
-//=============================================================================
+    //=============================================================================
 //                                   Constants
 //=============================================================================
-private static final int MAX_ENERGY = 3;
+    private static final int MAX_ENERGY = 3;
 
 //=============================================================================
 //                               Construction
 //=============================================================================
 
-/**
- * Construct a plant with initial energy 1.
- */
-public Plant() {
-	// Default energy is 1.
-	super(1);
-}
+    /**
+     * Construct a plant with initial energy 1.
+     */
+    public Plant() {
+        // Default energy is 1.
+        super(1);
+    }
 
-/**
- * Construct a plant with a given initial energy clamped to [1, MAX_ENERGY].
- *
- * @param energy requested starting energy
- */
-public Plant(int energy) {
-	super(Math.min(Math.max(1, energy), MAX_ENERGY));
-}
+    /**
+     * Construct a plant with a given initial energy clamped to [1, MAX_ENERGY].
+     *
+     * @param energy requested starting energy
+     */
+    public Plant(int energy) {
+        super(Math.min(Math.max(1, energy), MAX_ENERGY));
+    }
 
 //=============================================================================
 //                                   Growth
 //=============================================================================
 
-/**
- * Increase energy by 1 up to {@code MAX_ENERGY} if alive.
- *
- * @param world world context (ignored, required by interface)
- */
-@Override
-public void grow(World world) {
-	// TODO: Implement growth logic.
-}
+    /**
+     * Increase energy by 1 up to {@code MAX_ENERGY} if alive.
+     *
+     * @param world world context (ignored, required by interface)
+     */
+    @Override
+    public void grow(World world) {
+        if (isAlive() && energy < MAX_ENERGY) {
+            setEnergy(energy + 1);  // use setEnergy to makee sure update
+        }
+    }
 
 //=============================================================================
 //                                  Edible
 //=============================================================================
 
-/**
- * Return current energy as nutritional value.
- *
- * @return nutrition points
- */
-@Override
-public int nutrition() {
-	return energy;
-}
+    /**
+     * Return current energy as nutritional value.
+     *
+     * @return nutrition points
+     */
+    @Override
+    public int nutrition() {
+        return energy;
+    }
 
 //=============================================================================
 //                               Reproduction
 //=============================================================================
 
-/**
- * Determine whether reproduction can occur (alive, saturated energy, free neighbor).
- *
- * @param world world providing neighborhood lookup
- * @return {@code true} if a spawn is possible
- */
-@Override
-public boolean canReproduce(World world) {
-	// TODO - Implement reproduction condition check.
-	return false;
-}
+    /**
+     * Determine whether reproduction can occur (alive, saturated energy, free neighbor).
+     *
+     * @param world world providing neighborhood lookup
+     * @return {@code true} if a spawn is possible
+     */
+    @Override
+    public boolean canReproduce(World world) {
+        if (!isAlive() || energy != MAX_ENERGY) {
+            return false;
+        }
 
-/**
- * Produce a new plant instance with base energy.
- *
- * @return child organism
- */
-@Override
-public Organism reproduce() {
-	return new Plant();
-}
+        // check the 8 ways（including the diagonal）
+        Position[] neighbors = position.getAllNeighbors();
+        for (Position neighbor : neighbors) {
+            if (neighbor.isValid(world.getWidth(), world.getHeight())) {
+                Cell cell = world.getCell(neighbor);
+                if (cell != null && !cell.hasPlant()) {
+                    return true;  // Breeding in any direction with openings
+                }
+            }
+        }
+        return false;
+    }
 
-/**
- * Attempt to spawn a child into a neighboring free plant slot.
- * <p>On success resets parent energy to 1.</p>
- *
- * @param world world context
- * @return {@code true} if a child was placed
- */
-@Override
-public boolean spawn(World world) {
-	// TODO - Implement spawning logic.
-	return false;
-}
+    /**
+     * Produce a new plant instance with base energy.
+     *
+     * @return child organism
+     */
+    @Override
+    public Organism reproduce() {
+        return new Plant();
+    }
+
+    /**
+     * Attempt to spawn a child into a neighboring free plant slot.
+     * <p>On success resets parent energy to 1.</p>
+     *
+     * @param world world context
+     * @return {@code true} if a child was placed
+     */
+    @Override
+    public boolean spawn(World world) {
+        if (!canReproduce(world)) {
+            return false;
+        }
+
+        // But only placed in 4 basic directions
+        Position[] neighbors = position.getCardinalNeighbors();
+        java.util.ArrayList<Position> emptyPositions = new java.util.ArrayList<>();
+
+        // Check if it is empty
+        for (Position neighbor : neighbors) {
+            if (neighbor.isValid(world.getWidth(), world.getHeight())) {
+                Cell cell = world.getCell(neighbor);
+                if (cell != null && !cell.hasPlant()) {
+                    emptyPositions.add(neighbor);
+                }
+            }
+        }
+
+        if (emptyPositions.isEmpty()) {
+            return false;
+        }
+
+        int randomIndex = prof.utils.RandomGenerator.nextInt(emptyPositions.size());
+        Position spawnPosition = emptyPositions.get(randomIndex);
+
+        Plant child = new Plant(1);
+        Cell targetCell = world.getCell(spawnPosition);
+        if (targetCell != null) {
+            targetCell.setPlant(child);
+            child.setPosition(spawnPosition);
+            this.setEnergy(1);
+            return true;
+        }
+
+        return false;
+    }
 
 //=============================================================================
 //                            Energy Management
 //=============================================================================
 
-/**
- * Add energy clamped to {@code MAX_ENERGY}.
- *
- * @param amount increment value
- */
-@Override
-public void addEnergy(int amount) {
-	// TODO: Implement energy addition logic.
-}
+    /**
+     * Add energy clamped to {@code MAX_ENERGY}.
+     *
+     * @param amount increment value
+     */
+    @Override
+    public void addEnergy(int amount) {
+        if (isAlive()) {
+            energy = Math.min(energy + amount, MAX_ENERGY);
+        }
+    }
 
-/**
- * Subtract energy and mark dead if depleted.
- *
- * @param amount decrement value
- */
-@Override
-public void subEnergy(int amount) {
-	// TODO: Implement energy subtraction logic.
-}
+    /**
+     * Subtract energy and mark dead if depleted.
+     *
+     * @param amount decrement value
+     */
+    @Override
+    public void subEnergy(int amount) {
+        energy = Math.max(energy - amount, 0);
+        if (energy <= 0) {
+            // Use the setEnergy of the parent class to update the alive state.
+            setEnergy(0);
+        }
+    }
 }
