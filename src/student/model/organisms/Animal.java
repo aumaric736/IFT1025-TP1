@@ -65,7 +65,22 @@ public int visionRange() {
 @Override
 public List<Position> perceive(World world, Position pos) {
 	// TODO - Implémenter la méthode perceive pour Animal
-	return new ArrayList<>();
+    List<Position> visiblePositions = new ArrayList<>();
+    int range = visionRange();
+    // Parcourir un carré de vision autour de la position
+    for (int dx = -range; dx <= range; dx++) {
+        for (int dy = -range; dy <= range; dy++) {
+            // Ignorer la position actuelle (0,0)
+            if (dx == 0 && dy == 0) continue;
+            Position newPos = new Position(pos.getX() + dx, pos.getY() + dy);
+            // Vérifier si la position est dans les bornes du monde
+            if (world.isInside(newPos)) {
+                visiblePositions.add(newPos);
+            }
+        }
+    }
+
+    return visiblePositions;
 }
 
 //=============================================================================
@@ -82,7 +97,24 @@ public List<Position> perceive(World world, Position pos) {
 @Override
 public Cell chooseMove(World world, Position pos) {
 	// TODO - Implémenter la méthode chooseMove pour Animal
-	return null;
+    // 获取四个方向的邻近格子
+    List<Cell> neighbors = world.getCardinalNeighborCells(pos);  // 北、南、东、西
+    List<Cell> freeCells = new ArrayList<>();
+
+    // 筛选出空格
+    for (Cell cell : neighbors) {
+        if (cell.isEmptyForAnimal()) {  // 假设 Cell 提供这个方法
+            freeCells.add(cell);
+        }
+    }
+
+    // 如果没有可移动格子，则不移动
+    if (freeCells.isEmpty()) {
+        return null;
+    }
+
+    // 随机选一个目标格
+    return prof.utils.RandomGenerator.getInstance().choose(freeCells);
 }
 
 //=============================================================================
@@ -120,7 +152,24 @@ public abstract void eat(Cell cell, World world);
 @Override
 public boolean canReproduce(World world) {
 	// TODO - Implémenter la méthode canReproduce pour Animal
-	return false;
+    // 获取当前动物的位置
+    Position pos = world.findPosition(this);
+    if (pos == null) return false;
+
+    // 检查是否有空的相邻格子
+    boolean hasFreeSpace = false;
+    List<Cell> neighbors = world.getCardinalNeighborCells(pos);
+    for (Cell c : neighbors) {
+        if (c.isEmptyForAnimal()) {
+            hasFreeSpace = true;
+            break;
+        }
+    }
+
+    // 基础能量条件（子类可覆盖此逻辑）
+    boolean enoughEnergy = getEnergy() >= 2;
+
+    return enoughEnergy && hasFreeSpace;
 }
 
 /**
@@ -140,7 +189,37 @@ public abstract Organism reproduce();
  */
 @Override
 public boolean spawn(World world) {
-	// TODO - Implémenter la méthode spawn pour Animal
-	return false;
+    // 如果不能繁殖，直接返回 false
+    if (!canReproduce(world)) return false;
+
+    // 获取当前动物位置
+    Position pos = world.findPosition(this);
+    if (pos == null) return false;
+
+    // 找到周围可用的格子（上下左右）
+    List<Cell> neighbors = world.getCardinalNeighborCells(pos);
+    List<Cell> freeCells = new ArrayList<>();
+    for (Cell c : neighbors) {
+        if (c.isEmptyForAnimal()) {
+            freeCells.add(c);
+        }
+    }
+
+    // 没有空位则返回 false
+    if (freeCells.isEmpty()) return false;
+
+    // 随机选择一个空格
+    Cell target = prof.utils.RandomGenerator.getInstance().choose(freeCells);
+
+    // 创建新动物（调用子类的 reproduce()）
+    Organism baby = reproduce();
+
+    // 将新动物放入选中的格子中
+    target.setAnimal((Animal) baby);
+
+    // 父代能量减半（取整）
+    setEnergy(getEnergy() / 2);
+
+    return true;
 }
-}
+
