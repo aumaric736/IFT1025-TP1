@@ -8,6 +8,7 @@ package student.model.core;
 
 import java.util.ArrayList;
 import java.util.List;
+import student.model.organisms.Plant;
 
 /**
  * Represents the simulation world as a rectangular grid of {@link Cell} instances.
@@ -180,4 +181,57 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
 	
 	return neighbors;
 }
+//=============================================================================
+//                               Phase Execution
+//=============================================================================
+
+    /**
+     * Execute Phase 1: Plant Growth
+     * All plants grow by 1 energy, up to their maximum
+     */
+    public void executePhase1() {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Cell cell = grid[y][x];
+                if (cell.hasPlant()) {
+                    cell.getPlant().grow(this);
+                }
+            }
+        }
+    }
+
+    /**
+     * Execute Phase 4: Reproduction
+     * Plants and animals attempt to reproduce
+     */
+    public void executePhase4() {
+        // First, plants reproduce
+        List<Plant> plantsToReproduce = new ArrayList<>();
+
+        // Collect all plants that can reproduce
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Cell cell = grid[y][x];
+                if (cell.hasPlant() && cell.getPlant().canReproduce(this)) {
+                    plantsToReproduce.add(cell.getPlant());
+                }
+            }
+        }
+        // Attempt reproduction for each plant
+        for (Plant plant : plantsToReproduce) {
+            plant.spawn(this);
+        }
+    }
+    /**
+     * Execute Phase 5: Cleanup
+     * Remove dead organisms from the world
+     */
+    public void executePhase5() {
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Cell cell = grid[y][x];
+                cell.cleanupDeadOrganisms();
+            }
+        }
+    }
 }

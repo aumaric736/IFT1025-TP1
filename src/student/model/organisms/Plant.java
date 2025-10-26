@@ -62,8 +62,8 @@ public class Plant extends Organism implements Growable, Edible, Reproducible {
      */
     @Override
     public void grow(World world) {
-        if (isAlive() && energy < MAX_ENERGY) {
-            setEnergy(energy + 1);  // use setEnergy to makee sure update
+        if (isAlive() && getEnergy() < MAX_ENERGY) {
+            setEnergy(getEnergy() + 1);  // 确保能量增加
         }
     }
 

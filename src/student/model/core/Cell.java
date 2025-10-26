@@ -176,4 +176,12 @@ public Organism getOrganism() {
 	if (plant != null) return plant;
 	return null;
 }
+    /**
+     * Cleanup dead organisms by removing them from the cell
+     */
+    public void cleanupDeadOrganisms() {
+        if (plant != null && !plant.isAlive()) {
+            removePlant();
+        }
+    }
 }

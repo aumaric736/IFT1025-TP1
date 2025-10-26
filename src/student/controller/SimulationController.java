@@ -357,10 +357,11 @@ public void executePhase(final Phase phase) {
  * Plant growth phase: each plant performs its growth behavior.
  */
 public void phasePlantGrowth() {
-	// TODO : Implement plant growth phase logic.
-	
+    if (world == null) return;
+    world.executePhase1();
+
+    fireWorldChanged();
 	// Keep fireWorldChanged() at the end of the method.
-	fireWorldChanged();
 }
 
 /**
@@ -387,20 +388,20 @@ public void phaseCarnivores() {
  * Reproduction phase for all organism types.
  */
 public void phaseReproduction() {
-	// TODO : Implement reproduction phase logic.
-	
+    if (world == null) return;
+    world.executePhase4();
+    fireWorldChanged();
 	// Keep fireWorldChanged() at the end of the method.
-	fireWorldChanged();
 }
 
 /**
  * Cleanup phase: removes dead plants and animals from their cells.
  */
 public void phaseCleanup() {
-	// TODO : Implement cleanup phase logic.
-	
+    if (world == null) return;
+    world.executePhase5();
+    fireWorldChanged();
 	// Keep fireWorldChanged() at the end of the method.
-	fireWorldChanged();
 }
 
 //=============================================================================
