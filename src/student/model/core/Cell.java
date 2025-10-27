@@ -183,5 +183,8 @@ public Organism getOrganism() {
         if (plant != null && !plant.isAlive()) {
             removePlant();
         }
+        if (animal != null && !animal.isAlive()) {
+            removeAnimal();  // remove animal when is death
+        }
     }
 }

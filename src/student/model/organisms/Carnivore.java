@@ -10,6 +10,8 @@ import student.model.behaviors.Hunting;
 import student.model.core.Cell;
 import student.model.core.Position;
 import student.model.core.World;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Carnivore organism that:
@@ -102,8 +104,25 @@ public Position chooseHunt(World world) {
  */
 @Override
 public Cell chooseMove(World world, Position pos) {
-	// TODO - Implémenter le déplacement dirigé vers la proie
-	return null;
+    // 同样的基本移动逻辑
+    Position[] neighbors = pos.getCardinalNeighbors();
+    List<Cell> freeCells = new ArrayList<>();
+
+    for (Position neighborPos : neighbors) {
+        if (neighborPos.isValid(world.getWidth(), world.getHeight())) {
+            Cell cell = world.getCell(neighborPos);
+            if (cell != null) {
+                freeCells.add(cell);
+            }
+        }
+    }
+
+    if (freeCells.isEmpty()) {
+        return null;
+    }
+
+    int randomIndex = prof.utils.RandomGenerator.nextInt(freeCells.size());
+    return freeCells.get(randomIndex);
 }
 
 //=============================================================================
@@ -118,8 +137,11 @@ public Cell chooseMove(World world, Position pos) {
  */
 @Override
 public boolean canEat(Cell cell) {
-	// TODO - Implémenter la vérification de la présence d'un herbivore
-	return false;
+    if (cell == null || !cell.hasAnimal()) {
+        return false;
+    }
+    // 检查动物是否是 Herbivore 类型
+    return cell.getAnimal() instanceof Herbivore;
 }
 
 /**
@@ -130,7 +152,17 @@ public boolean canEat(Cell cell) {
  */
 @Override
 public void eat(Cell cell, World world) {
-	// TODO - Implémenter la consommation de l'herbivore
+    if (canEat(cell)) {
+        Animal animal = cell.getAnimal();
+        if (animal instanceof Herbivore herbivore && herbivore.isAlive()) {
+            // 获得草食动物的能量
+            int nutrition = herbivore.nutrition();
+            this.addEnergy(nutrition);
+            // 草食动物被吃掉后移除
+            herbivore.subEnergy(herbivore.getEnergy());
+            cell.removeAnimal();
+        }
+    }
 }
 
 //=============================================================================
@@ -145,10 +177,8 @@ public void eat(Cell cell, World world) {
  */
 @Override
 public boolean canReproduce(World world) {
-	// TODO - Implémenter la vérification des conditions de reproduction
-	return false;
+    return getEnergy() >= REPRODUCTION_THRESHOLD;
 }
-
 /**
  * Create a child carnivore with base energy.
  *

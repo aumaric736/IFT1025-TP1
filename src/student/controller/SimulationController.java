@@ -368,20 +368,18 @@ public void phasePlantGrowth() {
  * Herbivore movement, fleeing, and eating phase.
  */
 public void phaseHerbivores() {
-	// TODO : Implement herbivore movement, fleeing, and eating phase logic.
-	
-	// Keep fireWorldChanged() at the end of the method.
-	fireWorldChanged();
+    if (world == null) return;
+    world.executePhase2();  // 调用阶段2
+    fireWorldChanged();
 }
 
 /**
  * Carnivore movement, hunting, and eating phase.
  */
 public void phaseCarnivores() {
-	// TODO : Implement carnivore movement, hunting, and eating phase logic.
-	
-	// Keep fireWorldChanged() at the end of the method.
-	fireWorldChanged();
+    if (world == null) return;
+    world.executePhase3();  // 调用阶段3
+    fireWorldChanged();
 }
 
 /**

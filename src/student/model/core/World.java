@@ -9,6 +9,9 @@ package student.model.core;
 import java.util.ArrayList;
 import java.util.List;
 import student.model.organisms.Plant;
+import student.model.organisms.Animal;
+import student.model.organisms.Herbivore;
+import student.model.organisms.Carnivore;
 
 /**
  * Represents the simulation world as a rectangular grid of {@link Cell} instances.
@@ -187,7 +190,7 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
 
     /**
      * Execute Phase 1: Plant Growth
-     * All plants grow by 1 energy, up to their maximum
+     * All plants grow by 1 energy, until to their maximum
      */
     public void executePhase1() {
         for (int y = 0; y < height; y++) {
@@ -201,25 +204,127 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
     }
 
     /**
+     * Execute Phase 2: Herbivore
+     * Herbivores  lose energy
+     */
+    public void executePhase2() {
+        List<Herbivore> herbivores = new ArrayList<>();
+
+        // Collect all herbivores
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Cell cell = grid[y][x];
+                if (cell.hasAnimal() && cell.getAnimal() instanceof Herbivore herbivore) {
+                    herbivores.add(herbivore);
+                }
+            }
+        }
+
+        // Each herbivore performs the behavior
+        for (Herbivore herbivore : herbivores) {
+            if (herbivore.isAlive()) {
+                Position currentPos = herbivore.getPosition();
+                Cell currentCell = getCell(currentPos);
+
+                if (currentCell != null) {
+                    // move
+                    Cell targetCell = herbivore.chooseMove(this, currentPos);
+                    if (targetCell != null && targetCell != currentCell) {
+                        // move to new position
+                        transferAnimal(currentCell, targetCell);
+                        currentCell = targetCell;  // update new position
+                    }
+
+                    // Check if plants can be eaten (in the new location)
+                    if (herbivore.canEat(currentCell)) {
+                        herbivore.eat(currentCell, this);
+                    }
+
+                    // Energy -1 in each tour
+                    herbivore.subEnergy(1);
+                }
+            }
+        }
+    }
+
+    /**
+     * Execute Phase 3: Carnivore Phase
+     * Carnivores hunt, move, eat, and lose energy
+     */
+    public void executePhase3() {
+        List<Carnivore> carnivores = new ArrayList<>();
+
+        // Collect all carnivores
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                Cell cell = grid[y][x];
+                if (cell.hasAnimal() && cell.getAnimal() instanceof Carnivore carnivore) {
+                    carnivores.add(carnivore);
+                }
+            }
+        }
+
+        // Each carnivore performs the behavior
+        for (Carnivore carnivore : carnivores) {
+            if (carnivore.isAlive()) {
+                Position currentPos = carnivore.getPosition();
+                Cell currentCell = getCell(currentPos);
+
+                if (currentCell != null) {
+                    // move
+                    Cell targetCell = carnivore.chooseMove(this, currentPos);
+                    if (targetCell != null && targetCell != currentCell) {
+                        // move to new position
+                        transferAnimal(currentCell, targetCell);
+                        currentCell = targetCell;  // update new position
+                    }
+
+                    // Check whether it can eat herbivores (in the new location)
+                    if (carnivore.canEat(currentCell)) {
+                        carnivore.eat(currentCell, this);
+                    }
+
+                    // energy -1
+                    carnivore.subEnergy(1);
+                }
+            }
+        }
+    }
+
+    /**
      * Execute Phase 4: Reproduction
      * Plants and animals attempt to reproduce
      */
     public void executePhase4() {
         // First, plants reproduce
         List<Plant> plantsToReproduce = new ArrayList<>();
+        List<Animal> animalsToReproduce = new ArrayList<>();  // 新增：动物繁殖列表
 
         // Collect all plants that can reproduce
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
                 Cell cell = grid[y][x];
+
+                // plant reproduce
                 if (cell.hasPlant() && cell.getPlant().canReproduce(this)) {
                     plantsToReproduce.add(cell.getPlant());
                 }
+
+                // animal reproduce
+                if (cell.hasAnimal() && cell.getAnimal().canReproduce(this)) {
+                    animalsToReproduce.add(cell.getAnimal());
+                }
             }
         }
+
         // Attempt reproduction for each plant
         for (Plant plant : plantsToReproduce) {
             plant.spawn(this);
+        }
+
+        // Attempt reproduction for each animal
+        for (Animal animal : animalsToReproduce) {
+            animal.spawn(this);
         }
     }
     /**

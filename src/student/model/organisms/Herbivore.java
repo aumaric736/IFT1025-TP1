@@ -11,6 +11,8 @@ import student.model.behaviors.Fleeing;
 import student.model.core.Cell;
 import student.model.core.Position;
 import student.model.core.World;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Herbivore organism that:
@@ -92,8 +94,27 @@ public Position chooseFlee(World world) {
  */
 @Override
 public Cell chooseMove(World world, Position pos) {
-	// TODO - Implémenter la méthode chooseMove pour Herbivore
-	return null;
+    // Obtain the adjacent positions in the four cardinal directions
+    Position[] neighbors = pos.getCardinalNeighbors();
+    List<Cell> freeCells = new ArrayList<>();
+
+    // Filter empty cells
+    for (Position neighborPos : neighbors) {
+        if (neighborPos.isValid(world.getWidth(), world.getHeight())) {
+            Cell cell = world.getCell(neighborPos);
+            if (cell != null && cell.isEmptyAnimal()) {
+                freeCells.add(cell);
+            }
+        }
+    }
+
+    if (freeCells.isEmpty()) {
+        return null;
+    }
+
+    // Randomly select an empty cell
+    int randomIndex = prof.utils.RandomGenerator.nextInt(freeCells.size());
+    return freeCells.get(randomIndex);
 }
 
 //=============================================================================
@@ -108,8 +129,7 @@ public Cell chooseMove(World world, Position pos) {
  */
 @Override
 public boolean canEat(Cell cell) {
-	// TODO - Implémenter la vérification de la présence d'une plante
-	return false;
+    return cell != null && cell.hasPlant();
 }
 
 /**
@@ -120,7 +140,17 @@ public boolean canEat(Cell cell) {
  */
 @Override
 public void eat(Cell cell, World world) {
-	// TODO - Implémenter la consommation de la plante
+    if (canEat(cell)) {
+        Plant plant = cell.getPlant();
+        if (plant != null && plant.isAlive()) {
+            // 获得植物的能量
+            int nutrition = plant.nutrition();
+            this.addEnergy(nutrition);
+            // 植物被吃掉后移除
+            plant.subEnergy(plant.getEnergy());
+            cell.removePlant();
+        }
+    }
 }
 
 //=============================================================================
@@ -149,8 +179,7 @@ public int nutrition() {
  */
 @Override
 public boolean canReproduce(World world) {
-	// TODO - Implémenter la vérification des conditions de reproduction
-	return false;
+    return getEnergy() >= REPRODUCTION_THRESHOLD;
 }
 
 /**
