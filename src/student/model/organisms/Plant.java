@@ -12,6 +12,7 @@ import student.model.behaviors.Reproducible;
 import student.model.core.World;
 import student.model.core.Position;
 import student.model.core.Cell;
+import java.util.List;
 
 /**
  * Represents a simple plant with bounded energy and reproduction on saturation.
@@ -34,9 +35,6 @@ public class Plant extends Organism implements Growable, Edible, Reproducible {
 //                               Construction
 //=============================================================================
 
-    /**
-     * Construct a plant with initial energy 1.
-     */
     public Plant() {
         // Default energy is 1.
         super(1);
@@ -93,20 +91,16 @@ public class Plant extends Organism implements Growable, Edible, Reproducible {
      */
     @Override
     public boolean canReproduce(World world) {
-        if (!isAlive() || energy != MAX_ENERGY) {
-            return false;
+        if (energy < MAX_ENERGY) return false;
+        if (!alive) return false;
+
+        // On récupère les voisins adjacents (PAS DE DIAGONALES)
+        List<Cell> neighbors = world.getNeighbors(position, false);
+
+        for (Cell c : neighbors) {
+            if (c.isEmptyPlant()) return true;
         }
 
-        // check the 8 ways（including the diagonal）
-        Position[] neighbors = position.getAllNeighbors();
-        for (Position neighbor : neighbors) {
-            if (neighbor.isValid(world.getWidth(), world.getHeight())) {
-                Cell cell = world.getCell(neighbor);
-                if (cell != null && !cell.hasPlant()) {
-                    return true;  // Breeding in any direction with openings
-                }
-            }
-        }
         return false;
     }
 

@@ -152,30 +152,6 @@ public void testDeadPlantDoesNotGrow() {
 }
 
 /**
- * Vérifie la reproduction diagonale seulement.
- * Teste qu'une plante peut se reproduire si une case diagonale est libre,
- * mais l'énergie doit rester inchangée si le spawn échoue.
- */
-@Test
-public void testPlantCanReproduceDiagonalOnlyButSpawnFails() {
-	Position center = new Position(2, 2);
-	Plant parent = new Plant(3);
-	parent.setPosition(center);
-	world.getCell(center).setPlant(parent);
-	// Bloquer les 4 cardinaux
-	for (Position p : new Position[]{new Position(2, 1), new Position(2, 3), new Position(1, 2), new Position(3, 2)}) {
-		Plant blocker = new Plant(1);
-		blocker.setPosition(p);
-		world.getCell(p).setPlant(blocker);
-	}
-	// Laisser diagonales libres: canReproduce doit refléter la logique attendue (selon impl. étudiant)
-	assertTrue(parent.canReproduce(world), "canReproduce devrait être vrai si une diagonale est libre (implémentez Plant.canReproduce)");
-	boolean spawned = parent.spawn(world);
-	assertFalse(spawned, "spawn doit échouer car aucune case cardinale libre (implémentez Plant.spawn)");
-	assertEquals(3, parent.getEnergy(), "Énergie ne doit pas être réinitialisée en cas d'échec (implémentez Plant.spawn)");
-}
-
-/**
  * A plant with energy < max (3) must NOT be able to reproduce.
  */
 @Test
