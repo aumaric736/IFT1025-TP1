@@ -44,33 +44,33 @@ public int distanceTo(Position other) {
 	if (other == null) return Integer.MAX_VALUE; // DONOTTOUCH[core] (MAINTAINER, 2025-10-06): Legacy null handling.
 	return Math.abs(this.x - other.x) + Math.abs(this.y - other.y);
 }
-    /**
-     * 检查位置是否在世界边界内
-     */
-    public boolean isValid(int width, int height) {
-        return x >= 0 && x < width && y >= 0 && y < height;
-    }
+/**
+ * check is in the border
+ */
+public boolean isValid(int width, int height) {
+    return x >= 0 && x < width && y >= 0 && y < height;
+}
 
-    /**
-     * 获取四个基本方向的相邻位置（用于动物移动）
-     */
-    public Position[] getCardinalNeighbors() {
-        return new Position[] {
-                new Position(x, y - 1), // 北
-                new Position(x, y + 1), // 南
-                new Position(x + 1, y), // 东
-                new Position(x - 1, y)  // 西
-        };
-    }
+/**
+ * get the position cardinal
+ */
+public Position[] getCardinalNeighbors() {
+    return new Position[] {
+            new Position(x, y - 1), // nord
+            new Position(x, y + 1), // south
+            new Position(x + 1, y), // east
+            new Position(x - 1, y)  // west
+    };
+}
 
-    /**
-     * 获取所有八个方向的相邻位置（用于植物繁殖）
-     */
-    public Position[] getAllNeighbors() {
-        return new Position[] {
-                new Position(x-1, y-1), new Position(x, y-1), new Position(x+1, y-1),
-                new Position(x-1, y),                         new Position(x+1, y),
-                new Position(x-1, y+1), new Position(x, y+1), new Position(x+1, y+1)
-        };
-    }
+/**
+ * get the all neighbors
+ */
+public Position[] getAllNeighbors() {
+    return new Position[] {
+            new Position(x-1, y-1), new Position(x, y-1), new Position(x+1, y-1),
+            new Position(x-1, y),                         new Position(x+1, y),
+            new Position(x-1, y+1), new Position(x, y+1), new Position(x+1, y+1)
+    };
+  }
 }

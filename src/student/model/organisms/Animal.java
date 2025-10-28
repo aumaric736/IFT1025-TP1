@@ -64,17 +64,20 @@ public abstract class Animal extends Organism implements Perceptive, Movable, Ea
      */
     @Override
     public List<Position> perceive(World world, Position pos) {
-        // TODO - Implémenter la méthode perceive pour Animal
         List<Position> visiblePositions = new ArrayList<>();
         int range = visionRange();
-        // Parcourir un carré de vision autour de la position
+
         for (int dx = -range; dx <= range; dx++) {
             for (int dy = -range; dy <= range; dy++) {
                 // Ignorer la position actuelle (0,0)
                 if (dx == 0 && dy == 0) continue;
-                Position newPos = new Position(pos.x() + dx, pos.y() + dy);
-                // Vérifier si la position est dans les bornes du monde
-                if (world.isValidPosition(newPos)) {
+
+                int newX = pos.x() + dx;
+                int newY = pos.y() + dy;
+
+                // check the border before cree the position
+                if (newX >= 0 && newY >= 0 && newX < world.getWidth() && newY < world.getHeight()) {
+                    Position newPos = new Position(newX, newY);
                     visiblePositions.add(newPos);
                 }
             }
@@ -96,12 +99,11 @@ public abstract class Animal extends Organism implements Perceptive, Movable, Ea
      */
     @Override
     public Cell chooseMove(World world, Position pos) {
-        // TODO - Implémenter la méthode chooseMove pour Animal
-        // 获取四个方向的邻近格子
+        // get 4 ways cardinal
         Position[] neighbors = pos.getCardinalNeighbors();
         List<Cell> freeCells = new ArrayList<>();
 
-        // 筛选出空的单元格
+        // Filtering out empty cells
         for (Position neighborPos : neighbors) {
             if (neighborPos.isValid(world.getWidth(), world.getHeight())) {
                 Cell cell = world.getCell(neighborPos);
@@ -111,12 +113,11 @@ public abstract class Animal extends Organism implements Perceptive, Movable, Ea
             }
         }
 
-        // 如果没有可移动格子，则不移动
+        // If there is no grid, no move
         if (freeCells.isEmpty()) {
             return null;
         }
 
-        // 修复：正确的 RandomGenerator 用法
         int randomIndex = prof.utils.RandomGenerator.nextInt(freeCells.size());
         return freeCells.get(randomIndex);
     }
@@ -154,26 +155,7 @@ public abstract class Animal extends Organism implements Perceptive, Movable, Ea
      */
     @Override
     public boolean canReproduce(World world) {
-        // check energy,we need spllit 2
-        boolean enoughEnergy = getEnergy() >= 2;
-
-        // 检查是否有空闲空间
-        boolean hasFreeSpace = false;
-        Position currentPos = getPosition();
-        if (currentPos != null) {
-            Position[] neighbors = currentPos.getCardinalNeighbors();
-            for (Position neighborPos : neighbors) {
-                if (neighborPos.isValid(world.getWidth(), world.getHeight())) {
-                    Cell cell = world.getCell(neighborPos);
-                    if (cell != null && cell.isEmptyAnimal()) {
-                        hasFreeSpace = true;
-                        break;
-                    }
-                }
-            }
-        }
-
-        return enoughEnergy && hasFreeSpace;
+        return getEnergy() >= 2;
     }
 
     /**
@@ -195,10 +177,10 @@ public abstract class Animal extends Organism implements Perceptive, Movable, Ea
     public boolean spawn(World world) {
         if (!canReproduce(world)) return false;
 
-        Position currentPos = getPosition();  // 修复：直接用 getPosition
+        // get Position
+        Position currentPos = getPosition();
         if (currentPos == null) return false;
 
-        // 获取四个基本方向的相邻位置
         Position[] neighbors = currentPos.getCardinalNeighbors();
         List<Cell> freeCells = new ArrayList<>();
 
@@ -220,7 +202,14 @@ public abstract class Animal extends Organism implements Perceptive, Movable, Ea
         target.setAnimal((Animal) baby);
         baby.setPosition(target.getPosition());
 
-        setEnergy(getEnergy() / 2);
+        int beforeEnergy = getEnergy();
+
+        int newEnergy = getEnergy() / 2;
+        if (getEnergy() % 2 == 1) {
+            newEnergy++;
+        }
+        setEnergy(newEnergy);
+        int afterEnergy = getEnergy();
         return true;
     }
 }

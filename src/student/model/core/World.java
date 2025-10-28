@@ -128,14 +128,35 @@ public void transferOrganism(Cell from, Cell to) { // DONOTTOUCH[world] (MAINTAI
  * @param to   destination cell
  */
 public void transferAnimal(Cell from, Cell to) {
-	if (from.hasAnimal() && to.isEmptyAnimal()) {
-		var animal = from.getAnimal();
-		from.removeAnimal();
-		to.setAnimal(animal);
-		animal.setPosition(to.getPosition());
-	}
-}
+        // Allows movement to locations with prey
+    boolean canTransfer = from.hasAnimal() &&
+            (to.isEmptyAnimal() ||
+                    (to.hasAnimal() && to.getAnimal() instanceof Herbivore));
 
+    if (canTransfer) {
+        var animal = from.getAnimal();
+        Position oldPos = animal.getPosition();
+        int nutrition = 0;
+        // If there is prey at the target location, get energy first and remove the prey
+        if (to.hasAnimal() && to.getAnimal() instanceof Herbivore herbivore) {
+            nutrition = herbivore.nutrition();
+            to.removeAnimal();
+        }
+
+        from.removeAnimal();
+        to.setAnimal(animal);
+        animal.setPosition(to.getPosition());
+
+        // add energy
+        if (nutrition > 0 && animal instanceof Carnivore carnivore) {
+            int beforeEnergy = carnivore.getEnergy();
+            carnivore.addEnergy(nutrition);
+            int afterEnergy = carnivore.getEnergy();
+        }
+
+        Position newPos = animal.getPosition();
+    }
+}
 /**
  * Transfer a plant between cells if the destination plant slot is empty.
  *
@@ -187,26 +208,27 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
 //=============================================================================
 //                               Phase Execution
 //=============================================================================
-
-    /**
+//
+//
+/**
      * Execute Phase 1: Plant Growth
      * All plants grow by 1 energy, until to their maximum
-     */
-    public void executePhase1() {
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                Cell cell = grid[y][x];
-                if (cell.hasPlant()) {
+ */
+public void executePhase1() {
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            Cell cell = grid[y][x];
+             if (cell.hasPlant()) {
                     cell.getPlant().grow(this);
                 }
             }
         }
     }
-
     /**
      * Execute Phase 2: Herbivore
-     * Herbivores  lose energy
-     */
+     * Herbivores lose energy
+     * *
+     **/
     public void executePhase2() {
         List<Herbivore> herbivores = new ArrayList<>();
 
@@ -227,21 +249,21 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
                 Cell currentCell = getCell(currentPos);
 
                 if (currentCell != null) {
-                    // move
+                    // move and add border check
                     Cell targetCell = herbivore.chooseMove(this, currentPos);
-                    if (targetCell != null && targetCell != currentCell) {
+                    if (targetCell != null && targetCell != currentCell && isValidPosition(targetCell.getPosition())) {
                         // move to new position
                         transferAnimal(currentCell, targetCell);
                         currentCell = targetCell;  // update new position
                     }
-
                     // Check if plants can be eaten (in the new location)
                     if (herbivore.canEat(currentCell)) {
                         herbivore.eat(currentCell, this);
                     }
-
                     // Energy -1 in each tour
+                    int beforeEnergyHerbivore = herbivore.getEnergy();
                     herbivore.subEnergy(1);
+                    int afterEnergyHerbivore = herbivore.getEnergy();
                 }
             }
         }
@@ -271,26 +293,39 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
                 Cell currentCell = getCell(currentPos);
 
                 if (currentCell != null) {
-                    // move
+                    int initialEnergy = carnivore.getEnergy();
+
+                    // 1. sub 1 when move
+                    carnivore.subEnergy(1);
+                    int afterMoveCost = carnivore.getEnergy();
+
+                    // 2. move
                     Cell targetCell = carnivore.chooseMove(this, currentPos);
-                    if (targetCell != null && targetCell != currentCell) {
-                        // move to new position
+                    boolean didMove = false;
+
+                    if (targetCell != null && targetCell != currentCell && isValidPosition(targetCell.getPosition())) {
+
+                        // Record target location
+                        Position targetPosition = targetCell.getPosition();
+
+                        // Execute the move
                         transferAnimal(currentCell, targetCell);
-                        currentCell = targetCell;  // update new position
+
+                        // update currentCell
+                        currentCell = getCell(targetPosition);
+                        didMove = true;
                     }
 
-                    // Check whether it can eat herbivores (in the new location)
-                    if (carnivore.canEat(currentCell)) {
+
+                    boolean canEat = carnivore.canEat(currentCell);
+                    if (canEat) {
                         carnivore.eat(currentCell, this);
                     }
-
-                    // energy -1
-                    carnivore.subEnergy(1);
+                    int finalEnergy = carnivore.getEnergy();
                 }
             }
         }
     }
-
     /**
      * Execute Phase 4: Reproduction
      * Plants and animals attempt to reproduce
@@ -298,7 +333,7 @@ public List<Cell> getNeighbors(Position pos, boolean includeDiagonals) {
     public void executePhase4() {
         // First, plants reproduce
         List<Plant> plantsToReproduce = new ArrayList<>();
-        List<Animal> animalsToReproduce = new ArrayList<>();  // 新增：动物繁殖列表
+        List<Animal> animalsToReproduce = new ArrayList<>();
 
         // Collect all plants that can reproduce
         for (int y = 0; y < height; y++) {

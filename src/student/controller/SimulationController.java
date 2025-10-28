@@ -369,7 +369,7 @@ public void phasePlantGrowth() {
  */
 public void phaseHerbivores() {
     if (world == null) return;
-    world.executePhase2();  // 调用阶段2
+    world.executePhase2();
     fireWorldChanged();
 }
 
@@ -378,7 +378,7 @@ public void phaseHerbivores() {
  */
 public void phaseCarnivores() {
     if (world == null) return;
-    world.executePhase3();  // 调用阶段3
+    world.executePhase3();
     fireWorldChanged();
 }
 

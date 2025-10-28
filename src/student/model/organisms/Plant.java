@@ -128,10 +128,12 @@ public class Plant extends Organism implements Growable, Edible, Reproducible {
         }
 
         // But only placed in 4 basic directions
+
         Position[] neighbors = position.getCardinalNeighbors();
         java.util.ArrayList<Position> emptyPositions = new java.util.ArrayList<>();
 
         // Check if it is empty
+
         for (Position neighbor : neighbors) {
             if (neighbor.isValid(world.getWidth(), world.getHeight())) {
                 Cell cell = world.getCell(neighbor);

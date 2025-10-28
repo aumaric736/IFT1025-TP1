@@ -87,44 +87,174 @@ public int visionRange() {
  */
 @Override
 public Position chooseHunt(World world) {
-	// TODO - Implémenter la détection de proies
-	return null;
+    Position currentPos = getPosition();
+    if (currentPos == null) return null;
+    // cree the list for stork the position and food position
+    List<Position> visiblePositions = perceive(world, currentPos);
+    List<Position> preyPositions = new ArrayList<>();
+
+    // find all the Herbivore position in the view
+    for (Position pos : visiblePositions) {
+        Cell cell = world.getCell(pos);
+        if (cell != null && cell.hasAnimal() && cell.getAnimal() instanceof Herbivore) {
+            preyPositions.add(pos);
+        }
+    }
+
+    if (preyPositions.isEmpty()) {
+        return null;  // don't find the food
+    }
+
+    // find the closer distance
+    Position closestPrey = null;
+    int minDistance = Integer.MAX_VALUE;
+
+    for (Position preyPos : preyPositions) {
+        int distance = currentPos.distanceTo(preyPos);
+        if (distance < minDistance) {
+            minDistance = distance;
+            closestPrey = preyPos;
+        }
+    }
+
+    return closestPrey;
 }
 
 //=============================================================================
 //                                  Movement
 //=============================================================================
+    /**
+     * Move toward prey if detected; else random adjacent move.
+     *
+     * @param world world context
+     * @param pos   current position
+     * @return destination cell or {@code null}
+     */
+    @Override
+    public Cell chooseMove(World world, Position pos) {
+        // check if there is prey to track
+        Position preyPos = chooseHunt(world);
 
-/**
- * Move toward prey if detected; else random adjacent move.
- *
- * @param world world context
- * @param pos   current position
- * @return destination cell or {@code null}
- */
-@Override
-public Cell chooseMove(World world, Position pos) {
-    // 同样的基本移动逻辑
-    Position[] neighbors = pos.getCardinalNeighbors();
-    List<Cell> freeCells = new ArrayList<>();
-
-    for (Position neighborPos : neighbors) {
-        if (neighborPos.isValid(world.getWidth(), world.getHeight())) {
-            Cell cell = world.getCell(neighborPos);
-            if (cell != null) {
-                freeCells.add(cell);
-            }
+        if (preyPos != null) {
+            // there are prey, move to
+            return moveTowardPrey(world, pos, preyPos);
+        } else {
+            // if no,move random
+            return moveRandomly(world, pos);
         }
     }
 
-    if (freeCells.isEmpty()) {
+    private Cell moveTowardPrey(World world, Position currentPos, Position preyPos) {
+        // Move directly to the prey position
+        if (currentPos.distanceTo(preyPos) == 1) {
+            Cell preyCell = world.getCell(preyPos);
+            if (preyCell != null) {
+                return preyCell;  // Returns directly to the cell where the prey is located
+            }
+        }
+
+        int dx = Integer.compare(preyPos.x(), currentPos.x());
+        int dy = Integer.compare(preyPos.y(), currentPos.y());
+
+        List<Cell> possibleMoves = new ArrayList<>();
+
+        // Prioritise the main direction of movement
+        if (dx != 0) {
+            Position newPos = new Position(currentPos.x() + dx, currentPos.y());
+            Cell cell = world.getCell(newPos);
+            if (cell != null && world.isValidPosition(newPos) &&
+                    (cell.isEmptyAnimal() || newPos.equals(preyPos))) {
+                possibleMoves.add(cell);
+            }
+        }
+
+        if (dy != 0) {
+            Position newPos = new Position(currentPos.x(), currentPos.y() + dy);
+            Cell cell = world.getCell(newPos);
+            if (cell != null && world.isValidPosition(newPos) &&
+                    (cell.isEmptyAnimal() || newPos.equals(preyPos))) {
+                possibleMoves.add(cell);
+            }
+        }
+
+        // If you can't move in the main direction, try another empty direction
+        if (possibleMoves.isEmpty()) {
+            possibleMoves = getValidMoveCells(world, currentPos);
+        }
+
+        // Choose the closest of the possible directions to the prey.
+        if (!possibleMoves.isEmpty()) {
+            Cell bestMove = null;
+            int minDistance = Integer.MAX_VALUE;
+
+            for (Cell move : possibleMoves) {
+                int distance = move.getPosition().distanceTo(preyPos);
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    bestMove = move;
+                }
+            }
+            return bestMove;
+        }
+
         return null;
     }
 
-    int randomIndex = prof.utils.RandomGenerator.nextInt(freeCells.size());
-    return freeCells.get(randomIndex);
-}
+    private Cell moveRandomly(World world, Position pos) {
+        List<Cell> freeCells = getValidMoveCells(world, pos);
 
+        if (freeCells.isEmpty()) {
+            return null;
+        }
+
+        int randomIndex = prof.utils.RandomGenerator.nextInt(freeCells.size());
+        return freeCells.get(randomIndex);
+    }
+
+
+    private List<Cell> getValidMoveCells(World world, Position pos) {
+        List<Cell> freeCells = new ArrayList<>();
+        int x = pos.x();
+        int y = pos.y();
+        int width = world.getWidth();
+        int height = world.getHeight();
+
+        // check the border
+
+        if (y > 0) {
+            Position upPos = new Position(x, y - 1);
+            Cell cell = world.getCell(upPos);
+            if (cell != null && cell.isEmptyAnimal()) {
+                freeCells.add(cell);
+            }
+        }
+        // down (y+1)
+        if (y < height - 1) {
+            Position downPos = new Position(x, y + 1);
+            Cell cell = world.getCell(downPos);
+            if (cell != null && cell.isEmptyAnimal()) {
+                freeCells.add(cell);
+            }
+        }
+        // left (x-1)
+        if (x > 0) {
+            Position leftPos = new Position(x - 1, y);
+            Cell cell = world.getCell(leftPos);
+            if (cell != null && cell.isEmptyAnimal()) {
+                freeCells.add(cell);
+            }
+        }
+        // right (x+1)
+        if (x < width - 1) {
+            Position rightPos = new Position(x + 1, y);
+            Cell cell = world.getCell(rightPos);
+            if (cell != null && cell.isEmptyAnimal()) {
+                freeCells.add(cell);
+            }
+        }
+
+        return freeCells;
+    }
 //=============================================================================
 //                                   Feeding
 //=============================================================================
@@ -137,11 +267,17 @@ public Cell chooseMove(World world, Position pos) {
  */
 @Override
 public boolean canEat(Cell cell) {
-    if (cell == null || !cell.hasAnimal()) {
+    if (cell == null) {
         return false;
     }
-    // 检查动物是否是 Herbivore 类型
-    return cell.getAnimal() instanceof Herbivore;
+    if (!cell.hasAnimal()) {
+        return false;
+    }
+
+    Animal animal = cell.getAnimal();
+    boolean isHerbivore = animal instanceof Herbivore;
+    boolean isAlive = animal.isAlive();
+    return isHerbivore && isAlive;
 }
 
 /**
@@ -155,10 +291,16 @@ public void eat(Cell cell, World world) {
     if (canEat(cell)) {
         Animal animal = cell.getAnimal();
         if (animal instanceof Herbivore herbivore && herbivore.isAlive()) {
-            // 获得草食动物的能量
+            // get the enegry of the plante
             int nutrition = herbivore.nutrition();
+            int beforeEnergy = this.getEnergy();
+
+            // add energy
             this.addEnergy(nutrition);
-            // 草食动物被吃掉后移除
+
+            int afterEnergy = this.getEnergy();
+
+            // move the food
             herbivore.subEnergy(herbivore.getEnergy());
             cell.removeAnimal();
         }
