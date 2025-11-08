@@ -22,13 +22,10 @@ public record Position(int x, int y) {
  * @throws IllegalArgumentException if {@code x < 0} or {@code y < 0}
  */
 public Position {
-	if (x < 0) {
-		throw new IllegalArgumentException("La coordonnée x ne peut pas être négative: " + x); // runtime string preserved
-	}
-	if (y < 0) {
-		throw new IllegalArgumentException("La coordonnée y ne peut pas être négative: " + y); // runtime string preserved
-	}
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
 }
+
 
 //=============================================================================
 //                                Utilities
